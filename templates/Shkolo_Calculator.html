@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="bg">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Въвеждане на оценки</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+</head>
+
+
+<style>
+    .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+    }
+
+    .btn-admin {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+    }
+
+    .btn-back-admin {
+            background-color: var(--text-secondary);
+    }
+</style>
+
+<body>
+
+    <div class="container">
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
+        
+        <h1 class="animate__animated animate__fadeIn">Въведете оценките за следните предмети:</h1>
+        
+        <div class="action-buttons">
+            <a href="{{ url_for('admin') }}" class="btn-admin btn-back-admin">Управление на предметите</a>
+        </div>
+        
+        <div id="subjects" class="animate__animated animate__fadeIn"></div>
+        
+        <div class="stats-container animate__animated animate__fadeIn">
+            <div class="stats-item">
+                <div class="stats-label">Средна оценка</div>
+                <span id="averageGrade" class="average">0.00</span>
+            </div>
+            
+            <div class="stats-item">
+                <div class="stats-label">Брой оценки</div>
+                <div id="count">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let subjects = [];
+        let grades = [];
+        let totalGrades = 0;
+
+        async function loadSubjects() {
+            try {
+                const response = await fetch('/api/subjects');
+                if (!response.ok) {
+                    throw new Error('Failed to load subjects');
+                }
+                const data = await response.json();
+                subjects = data.subjects;
+                
+                grades = Array(subjects.length).fill(0);
+                
+                generateSubjects();
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                document.getElementById('subjects').innerHTML = `
+                    <div class="error-message">
+                        <p>Грешка при зареждане на предметите. Моля, опитайте отново по-късно.</p>
+                        <button onclick="loadSubjects()">Опитай отново</button>
+                    </div>
+                `;
+            }
+        }
+
+        function generateSubjects() {
+            const subjectsDiv = document.getElementById('subjects');
+            subjectsDiv.innerHTML = '';
+            
+            subjects.forEach((subject, index) => {
+                const subjectDiv = document.createElement('div');
+                subjectDiv.className = 'subject';
+                subjectDiv.dataset.subject = index + 1;
+
+                const label = document.createElement('label');
+                label.textContent = subject;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'buttons';
+
+                for (let i = 2; i <= 6; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.dataset.grade = i;
+                    button.onclick = () => updateGrade(index + 1, i);
+                    buttonsDiv.appendChild(button);
+                }
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'X';
+                deleteButton.className = 'delete-button';
+                deleteButton.onclick = () => deleteGrade(index + 1);
+
+                buttonsDiv.appendChild(deleteButton);
+
+                subjectDiv.appendChild(label);
+                subjectDiv.appendChild(buttonsDiv);
+                subjectsDiv.appendChild(subjectDiv);
+            });
+        }
+
+        function updateGrade(subjectNumber, grade) {
+            if (grades[subjectNumber - 1] !== 0) {
+                return;
+            }
+
+            grades[subjectNumber - 1] = grade;
+            totalGrades++;
+            updateCount();
+
+            const validGrades = grades.filter(grade => grade > 0);
+            const sum = validGrades.reduce((a, b) => a + b, 0);
+            const average = validGrades.length ? (sum / validGrades.length).toFixed(2) : 0;
+            const averageGradeElem = document.getElementById('averageGrade');
+            averageGradeElem.textContent = average;
+
+            if (average >= 2 && average < 3) {
+                averageGradeElem.style.backgroundColor = '#E7505A';
+            } else if (average >= 3 && average < 3.5) {
+                averageGradeElem.style.backgroundColor = '#F2784B';
+            } else if (average >= 3.5 && average < 4.5) {
+                averageGradeElem.style.backgroundColor = '#F7CA18';
+            } else if (average >= 4.5 && average < 5.5) {
+                averageGradeElem.style.backgroundColor = '#3598DC';
+            } else if (average >= 5.5 && average <= 6) {
+                averageGradeElem.style.backgroundColor = '#26C281';
+            } else {
+                averageGradeElem.style.backgroundColor = 'transparent';
+            }
+
+            const subjectDiv = document.querySelector(`.subject[data-subject="${subjectNumber}"]`);
+            subjectDiv.classList.add('completed');
+        }
+
+        function deleteGrade(subjectNumber) {
+            if (grades[subjectNumber - 1] === 0) {
+                return;
+            }
+
+            grades[subjectNumber - 1] = 0;
+            totalGrades--;
+            updateCount();
+
+            const validGrades = grades.filter(grade => grade > 0);
+            const sum = validGrades.reduce((a, b) => a + b, 0);
+            const average = validGrades.length ? (sum / validGrades.length).toFixed(2) : 0;
+            const averageGradeElem = document.getElementById('averageGrade');
+            averageGradeElem.textContent = average;
+
+            if (average >= 2 && average < 3) {
+                averageGradeElem.style.backgroundColor = '#E7505A';
+            } else if (average >= 3 && average < 3.5) {
+                averageGradeElem.style.backgroundColor = '#F2784B';
+            } else if (average >= 3.5 && average < 4.5) {
+                averageGradeElem.style.backgroundColor = '#F7CA18';
+            } else if (average >= 4.5 && average < 5.5) {
+                averageGradeElem.style.backgroundColor = '#3598DC';
+            } else if (average >= 5.5 && average <= 6) {
+                averageGradeElem.style.backgroundColor = '#26C281';
+            } else {
+                averageGradeElem.style.backgroundColor = 'transparent';
+            }
+
+            const subjectDiv = document.querySelector(`.subject[data-subject="${subjectNumber}"]`);
+            subjectDiv.classList.remove('completed');
+        }
+
+        function updateCount() {
+            const countElem = document.getElementById('count');
+            countElem.textContent = totalGrades;
+        }
+
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-theme');
+                themeToggle.textContent = '🌞';
+            } else {
+                themeToggle.textContent = '🌙';
+            }
+            
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                const isDark = document.body.classList.contains('dark-theme');
+                
+                themeToggle.textContent = isDark ? '🌞' : '🌙';
+                
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setupThemeToggle();
+            loadSubjects();
+        });
+    </script>
+</body>
+</html>

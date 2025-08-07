@@ -1,0 +1,332 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+
+:root {
+  --primary: #3b82f6;
+  --primary-light: #60a5fa;
+  --danger-2: #E7505A;
+  --warning-3: #F2784B;
+  --success-4: #F7CA18;
+  --info-5: #3598DC;
+  --excellent-6: #26C281;
+  --bg-color: #f9fafb;
+  --card-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --transition: all 0.3s ease;
+}
+
+.dark-theme {
+  --primary: #3b82f6;
+  --primary-light: #60a5fa;
+  --danger-2: #E7505A;
+  --warning-3: #F2784B;
+  --success-4: #F7CA18;
+  --info-5: #3598DC;
+  --excellent-6: #26C281;
+  --bg-color: #111827;
+  --card-bg: #1f2937;
+  --text-main: #f3f4f6;
+  --text-secondary: #d1d5db52;
+  --border-color: #374151;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  padding: 2rem;
+  line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.btn-admin {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: var(--primary);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-back {
+  background-color: var(--text-secondary);
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  transition: var(--transition);
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+h1:after {
+  content: '';
+  position: absolute;
+  width: 60px;
+  height: 4px;
+  background-color: var(--primary);
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 2rem 0 1rem;
+  font-weight: 500;
+}
+
+#subjects {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.subject {
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  position: relative;
+  transition: var(--transition);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.subject:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.subject::before {
+  content: '✓';
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: var(--success);
+  color: white;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0 0.75rem 0 0.75rem;
+  font-size: 0.9rem;
+  display: none;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.subject.completed::before {
+  display: block;
+  opacity: 1;
+  animation: fadeIn 0.5s;
+}
+
+.subject label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  flex: 1;
+  min-height: 60px;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.buttons .delete-button {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  background-color: #dc2626;
+
+}
+
+button {
+  height: 40px;
+  border-radius: 0.5rem;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button[data-grade="2"] {
+  background-color: var(--danger-2);
+}
+
+button[data-grade="3"] {
+  background-color: var(--warning-3);
+}
+
+button[data-grade="4"] {
+  background-color: var(--success-4);
+}
+
+button[data-grade="5"] {
+  background-color: var(--info-5);
+}
+
+button[data-grade="6"] {
+  background-color: var(--excellent-6);
+}
+
+.delete-button {
+  background-color: #dc2626;
+  font-size: 0.9rem;
+}
+
+.stats-container {
+    background-color: var(--card-bg);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    text-align: center;
+    transition: var(--transition);
+  }
+  
+  .stats-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .stats-label {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  
+  #averageGrade {
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 600;
+    font-size: 1.2rem;
+    min-width: 60px;
+    display: inline-block;
+    text-align: center;
+    transition: var(--transition);
+  }
+  
+  #count {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-main);
+    padding: 0.4rem 0.8rem;
+    background-color: var(--bg-color);
+    border-radius: 0.5rem;
+    min-width: 60px;
+  }
+  
+  @media (max-width: 768px) {
+    .stats-container {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+    }
+  }
+
+.fadeIn {
+  animation: fadeIn 0.5s;
+}
+
+.pulse {
+  animation: pulse 1s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="bg">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление на предмети</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+        integrity="sha512-iBBXm8fW90+nuLcSKVBZ+R4l6yhl+6bZpI1R+4JcH4Y5tqNLgVY0j0Xr0b0tv0t9kI0m1Z6zXZ6mwHJ5upLr0w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"
+        integrity="sha512-zGZpU8lD+ysavF6jNa2+OQGdK3Jd3j6zG5/YK6DCc+kDHF8SrkjA8xB3CFkQo+E0gO8hMb967Q0bIph9C3+2XA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .subject-list {
+            background-color: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .subject-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .subject-item:last-child {
+            border-bottom: none;
+        }
+
+        .subject-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .subject-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .add-form {
+            background-color: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-delete {
+            background-color: #dc2626;
+        }
+
+        .btn-back {
+            background-color: var(--text-secondary);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 1.5rem 2rem;
+            border-radius: 0.75rem;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+
+
+
+        .notification.success {
+            background-color: var(--success);
+        }
+
+        .notification.error {
+            background-color: var(--danger);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container admin-container">
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
+
+        <h1 class="animate__animated animate__fadeIn">Управление на предмети</h1>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('index') }}" class="btn btn-back">← Назад към оценките</a>
+        </div>
+
+        <h2>Списък с предмети</h2>
+        <div id="subjectList" class="subject-list animate__animated animate__fadeIn">
+            <div class="loading">Зареждане на предмети...</div>
+        </div>
+
+        <h2>Добавяне на нов предмет</h2>
+        <div class="add-form animate__animated animate__fadeIn">
+            <div class="form-group">
+                <label for="newSubject">Име на предмет</label>
+                <input type="text" id="newSubject" placeholder="Въведете име на нов предмет">
+            </div>
+            <button id="addSubject" class="btn">Добави предмет</button>
+        </div>
+
+        <h2>Импортиране на предмети</h2>
+        <div class="add-form animate__animated animate__fadeIn import-form">
+            <input type="file" id="importFile" accept=".json,.csv">
+            <button id="importBtn" class="btn">Импортирай</button>
+        </div>
+
+        <div id="notification" class="notification">Съобщение</div>
+    </div>
+
+    <script>
+        let subjects = [];
+
+        async function loadSubjects() {
+            try {
+                const response = await fetch('/api/subjects');
+                if (!response.ok) {
+                    throw new Error('Failed to load subjects');
+                }
+                const data = await response.json();
+                subjects = data.subjects;
+                renderSubjects();
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                showNotification('Грешка при зареждане на предметите', 'error');
+            }
+        }
+
+        function renderSubjects() {
+            const subjectListElement = document.getElementById('subjectList');
+            subjectListElement.innerHTML = '';
+
+            if (subjects.length === 0) {
+                subjectListElement.innerHTML = '<div class="empty-state">Няма добавени предмети</div>';
+                return;
+            }
+
+            subjects.forEach((subject, index) => {
+                const subjectItem = document.createElement('div');
+                subjectItem.className = 'subject-item';
+
+                const subjectName = document.createElement('div');
+                subjectName.className = 'subject-name';
+                subjectName.textContent = subject;
+
+                const controls = document.createElement('div');
+                controls.className = 'subject-controls';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-delete';
+                deleteBtn.textContent = 'Изтрий';
+                deleteBtn.addEventListener('click', () => deleteSubject(index));
+
+                controls.appendChild(deleteBtn);
+                subjectItem.appendChild(subjectName);
+                subjectItem.appendChild(controls);
+                subjectListElement.appendChild(subjectItem);
+            });
+        }
+
+        async function addSubject() {
+            const newSubjectInput = document.getElementById('newSubject');
+            const subjectName = newSubjectInput.value.trim();
+
+            if (!subjectName) {
+                showNotification('Моля, въведете име на предмет', 'error');
+                return;
+            }
+
+            if (subjects.includes(subjectName)) {
+                showNotification('Този предмет вече съществува', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/subjects/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ subject: subjectName })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to add subject');
+                }
+
+                await loadSubjects();
+                newSubjectInput.value = ''
+                showNotification('Предметът беше добавен успешно', 'success');
+            } catch (error) {
+                console.error('Error adding subject:', error);
+                showNotification('Грешка при добавяне на предмет: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteSubject(index) {
+            if (confirm('Сигурни ли сте, че искате да изтриете този предмет?')) {
+                try {
+                    const response = await fetch(`/api/subjects/delete/${index}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Failed to delete subject');
+                    }
+
+                    await loadSubjects();
+                    showNotification('Предметът беше изтрит успешно', 'success');
+                } catch (error) {
+                    console.error('Error deleting subject:', error);
+                    showNotification('Грешка при изтриване на предмет: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+
+            setTimeout(() => notification.classList.add('show'), 10);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-theme');
+                themeToggle.textContent = '🌞';
+            } else {
+                themeToggle.textContent = '🌙';
+            }
+
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                const isDark = document.body.classList.contains('dark-theme');
+
+                themeToggle.textContent = isDark ? '🌞' : '🌙';
+
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupThemeToggle();
+            document.getElementById('addSubject').addEventListener('click', addSubject);
+            loadSubjects();
+        });
+
+        function renderSubjects() {
+            const subjectListElement = document.getElementById('subjectList');
+            subjectListElement.innerHTML = '';
+
+            if (subjects.length === 0) {
+                subjectListElement.innerHTML = '<div class="empty-state">Няма добавени предмети</div>';
+                return;
+            }
+
+            subjects.forEach((subject, index) => {
+                const subjectItem = document.createElement('div');
+                subjectItem.className = 'subject-item';
+
+                const subjectName = document.createElement('div');
+                subjectName.className = 'subject-name';
+                subjectName.textContent = subject;
+
+                const controls = document.createElement('div');
+                controls.className = 'subject-controls';
+
+                const moveUpBtn = document.createElement('button');
+                moveUpBtn.className = 'btn';
+                moveUpBtn.textContent = '⬆';
+                moveUpBtn.disabled = index === 0; // Disable for first item
+                moveUpBtn.addEventListener('click', () => moveSubject(index, index - 1));
+
+                const moveDownBtn = document.createElement('button');
+                moveDownBtn.className = 'btn';
+                moveDownBtn.textContent = '⬇';
+                moveDownBtn.disabled = index === subjects.length - 1; // Disable for last item
+                moveDownBtn.addEventListener('click', () => moveSubject(index, index + 1));
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-delete';
+                deleteBtn.textContent = 'Изтрий';
+                deleteBtn.addEventListener('click', () => deleteSubject(index));
+
+                controls.appendChild(moveUpBtn);
+                controls.appendChild(moveDownBtn);
+                controls.appendChild(deleteBtn);
+
+                subjectItem.appendChild(subjectName);
+                subjectItem.appendChild(controls);
+                subjectListElement.appendChild(subjectItem);
+            });
+        }
+
+        async function moveSubject(fromIndex, toIndex) {
+            try {
+                const response = await fetch('/api/subjects/move', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ from: fromIndex, to: toIndex })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to move subject');
+                }
+
+                await loadSubjects();
+                showNotification('Предметът беше преместен успешно', 'success');
+            } catch (error) {
+                console.error('Error moving subject:', error);
+                showNotification('Грешка при преместване на предмет: ' + error.message, 'error');
+            }
+        }
+
+        document.getElementById('importBtn').addEventListener('click', importSubjects);
+
+        async function importSubjects() {
+            const input = document.getElementById('importFile');
+            if (!input.files.length) {
+                return showNotification('Моля, изберете файл', 'error');
+            }
+            const file = input.files[0];
+            const form = new FormData();
+            form.append('file', file);
+
+            try {
+                const resp = await fetch('/api/subjects/import', {
+                    method: 'POST',
+                    body: form
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Import failed');
+
+                await loadSubjects();
+                showNotification(`Успешно импортирани ${data.imported.length} нови предмета`, 'success');
+                input.value = '';
+            } catch (e) {
+                console.error(e);
+                showNotification('Грешка при импортиране: ' + e.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>
